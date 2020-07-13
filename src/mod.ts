@@ -33,7 +33,7 @@ export {
 
 /**
  * We need to put `Wechaty` at the beginning of this file for import
- * because we have circluar dependencies between `Puppet` & `Wechaty`
+ * because we have circular dependencies between `Puppet` & `Wechaty`
  */
 export {
   Wechaty,
@@ -58,7 +58,9 @@ export {
   RoomInvitation,
   UrlLink,
   MiniProgram,
-}                         from './user'
+}                         from './user/mod'
+
+export { createFixture }  from './create-fixture'
 
 export {
 }                         from './deprecated'

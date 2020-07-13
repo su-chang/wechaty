@@ -157,17 +157,6 @@ export class Message extends Accessory implements Sayable {
   }
 
   /**
-   * TODO: rename create to load ??? Huan 201806
-   * @deprecated: use load() instead
-   * @ignore
-   */
-
-  public static create (id: string): Message {
-    log.warn('Message', 'static create(%s) DEPRECATED. Use load() instead', id)
-    return this.load(id)
-  }
-
-  /**
    *
    * Instance Properties
    * @hidden
@@ -190,11 +179,11 @@ export class Message extends Accessory implements Sayable {
     const MyClass = instanceToClass(this, Message)
 
     if (MyClass === Message) {
-      throw new Error('Message class can not be instanciated directly! See: https://github.com/wechaty/wechaty/issues/1217')
+      throw new Error('Message class can not be instantiated directly! See: https://github.com/wechaty/wechaty/issues/1217')
     }
 
     if (!this.puppet) {
-      throw new Error('Message class can not be instanciated without a puppet!')
+      throw new Error('Message class can not be instantiated without a puppet!')
     }
   }
 
@@ -228,15 +217,6 @@ export class Message extends Accessory implements Sayable {
       if (!this.payload) {
         throw new Error('no payload')
       }
-      // const filename = this.puppet.messagefile payload.filename
-      // if (!filename) {
-      //   throw new Error(
-      //     'no file for message id: ' + this.id
-      //     + ' with type: ' + Message.Type[this.payload.type]
-      //     + '(' + this.payload.type + ')',
-      //   )
-      // }
-      // msgStrList.push(`<${filename || 'unknown file name'}>`)
     }
 
     return msgStrList.join('')
@@ -417,13 +397,14 @@ export class Message extends Accessory implements Sayable {
   }
 
   public say (text:    string)      : Promise<void | Message>
+  public say (num:     number)      : Promise<void | Message>
   public say (message: Message)     : Promise<void | Message>
   public say (contact: Contact)     : Promise<void | Message>
   public say (file:    FileBox)     : Promise<void | Message>
   public say (url:     UrlLink)     : Promise<void | Message>
   public say (mini:    MiniProgram) : Promise<void | Message>
 
-  // Huan(202006): allow fall down to the defination to get more flexibility.
+  // Huan(202006): allow fall down to the definition to get more flexibility.
   // public say (...args: never[]): Promise<never>
 
   /**
@@ -456,8 +437,8 @@ export class Message extends Accessory implements Sayable {
    * // 2. send Text
    *
    *   if (/^dong$/i.test(m.text())) {
-   *     await msg.say('dingdingding')
-   *     const message = await msg.say('dingdingding') // only supported by puppet-padplus
+   *     await msg.say('ding')
+   *     const message = await msg.say('ding') // only supported by puppet-padplus
    *   }
    *
    * // 3. send Contact
@@ -504,14 +485,15 @@ export class Message extends Accessory implements Sayable {
    * .start()
    */
   public async say (
-    textOrContactOrFileOrUrlOrMini :  string
+    something :  string
+                                    | number
                                     | Message
                                     | Contact
                                     | FileBox
                                     | UrlLink
                                     | MiniProgram,
   ): Promise<void | Message> {
-    log.verbose('Message', 'say(%s)', textOrContactOrFileOrUrlOrMini)
+    log.verbose('Message', 'say(%s)', something)
 
     // const user = this.puppet.userSelf()
     const from = this.from()
@@ -520,6 +502,7 @@ export class Message extends Accessory implements Sayable {
 
     let conversationId: string
     let conversation
+
     if (room) {
       conversation = room
       conversationId = room.id
@@ -533,57 +516,64 @@ export class Message extends Accessory implements Sayable {
     /**
      * Support say a existing message: just forward it.
      */
-    if (textOrContactOrFileOrUrlOrMini instanceof Message) {
-      return textOrContactOrFileOrUrlOrMini.forward(conversation)
+    if (something instanceof Message) {
+      return something.forward(conversation)
+    }
+
+    // Convert number to string
+    if (typeof something === 'number') {
+      something = String(something)
     }
 
     let msgId: void | string
-    if (typeof textOrContactOrFileOrUrlOrMini === 'string') {
+    if (typeof something === 'string') {
       /**
        * Text Message
        */
-      // msgId = await this.puppet.messageSendText({
-      //   contactId : (from && from.id) || undefined,
-      //   roomId    : (room && room.id) || undefined,
-      // }, textOrContactOrFileOrUrlOrMini)
+      let mentionIdList
+      if (from && await this.mentionSelf()) {
+        mentionIdList = [from.id]
+      }
+
       msgId = await this.puppet.messageSendText(
         conversationId,
-        textOrContactOrFileOrUrlOrMini,
+        something,
+        mentionIdList,
       )
-    } else if (textOrContactOrFileOrUrlOrMini instanceof Contact) {
+    } else if (something instanceof Contact) {
       /**
        * Contact Card
        */
       msgId = await this.puppet.messageSendContact(
         conversationId,
-        textOrContactOrFileOrUrlOrMini.id,
+        something.id,
       )
-    } else if (textOrContactOrFileOrUrlOrMini instanceof FileBox) {
+    } else if (something instanceof FileBox) {
       /**
        * File Message
        */
       msgId = await this.puppet.messageSendFile(
         conversationId,
-        textOrContactOrFileOrUrlOrMini,
+        something,
       )
-    } else if (textOrContactOrFileOrUrlOrMini instanceof UrlLink) {
+    } else if (something instanceof UrlLink) {
       /**
        * Link Message
        */
       msgId = await this.puppet.messageSendUrl(
         conversationId,
-        textOrContactOrFileOrUrlOrMini.payload,
+        something.payload,
       )
-    } else if (textOrContactOrFileOrUrlOrMini instanceof MiniProgram) {
+    } else if (something instanceof MiniProgram) {
       /**
        * MiniProgram
        */
       msgId = await this.puppet.messageSendMiniProgram(
         conversationId,
-        textOrContactOrFileOrUrlOrMini.payload,
+        something.payload,
       )
     } else {
-      throw new Error('unknown msg: ' + textOrContactOrFileOrUrlOrMini)
+      throw new Error('Message.say() received unknown msg: ' + something)
     }
     if (msgId) {
       const msg = this.wechaty.Message.load(msgId)
@@ -748,7 +738,7 @@ export class Message extends Accessory implements Sayable {
     contactList = contactList.concat.apply([], contactListNested)
 
     if (contactList.length === 0) {
-      log.silly('Message', `message.mentionList() can not found member using room.member() from mentionList, metion string: ${JSON.stringify(mentionNameList)}`)
+      log.silly('Message', `message.mentionList() can not found member using room.member() from mentionList, mention string: ${JSON.stringify(mentionNameList)}`)
     }
     return contactList
   }
