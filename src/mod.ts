@@ -38,12 +38,15 @@ export {
 export {
   Wechaty,
   WechatyOptions,
+}                             from './wechaty'
+export {
   WechatyPlugin,
-}                     from './wechaty'
+  WechatyPluginUninstaller,
+}                             from './plugin'
 
 export {
   PuppetModuleName,
-}                     from './puppet-config'
+}                             from './puppet-config'
 
 export {
   Contact,
@@ -59,11 +62,6 @@ export {
   UrlLink,
   MiniProgram,
 }                         from './user/mod'
-
-export { createFixture }  from './create-fixture'
-
-export {
-}                         from './deprecated'
 
 export { IoClient }   from './io-client'
 export {

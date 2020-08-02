@@ -4,7 +4,7 @@
 
 [![Downloads](https://img.shields.io/npm/dm/wechaty.svg?style=flat-square)](https://www.npmjs.com/package/wechaty)
 [![GitHub stars](https://img.shields.io/github/stars/wechaty/wechaty.svg?label=github%20stars)](https://github.com/wechaty/wechaty)
-[![Docker Pulls](https://img.shields.io/docker/pulls/zixia/wechaty.svg?maxAge=2592000)](https://hub.docker.com/r/zixia/wechaty/)
+[![Docker Pulls](https://img.shields.io/docker/pulls/wechaty/wechaty.svg?maxAge=2592000)](https://hub.docker.com/r/wechaty/wechaty/)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-blue.svg)](https://www.typescriptlang.org/)
 [![Gitter](https://badges.gitter.im/Chatie/wechaty.svg)](https://gitter.im/Chatie/wechaty?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
@@ -15,7 +15,7 @@ Wechaty is a Conversational AI RPA Chatbot SDK for Wechat **Individual** Account
 :octocat: <https://github.com/Wechaty/wechaty>  
 :beetle: <https://github.com/Wechaty/wechaty/issues>  
 :book: <https://github.com/Wechaty/wechaty/wiki>  
-:whale: <https://hub.docker.com/r/zixia/wechaty>  
+:whale: <https://hub.docker.com/r/wechaty/wechaty>  
 
 ## :yum: Voice of Developers
 
@@ -75,7 +75,7 @@ Wechaty.instance() // Global Instance
 
 This bot can log all messages to the console after login by scan.
 
-You can find more examples from [Wiki](https://github.com/Wechaty/wechaty/wiki/Examples) and [Example Directory](https://github.com/Wechaty/wechaty/blob/master/examples/).
+You can find Wechaty Official Example at [examples/ding-dong-bot.ts](examples/ding-dong-bot.ts), and more from our [Example Directory](https://github.com/Wechaty/wechaty-getting-started/blob/master/examples/).
 
 ## :checkered_flag: Requirements
 
@@ -113,8 +113,8 @@ node mybot.js
 
 ### 2. Docker
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/zixia/wechaty.svg?maxAge=2592000)](https://hub.docker.com/r/zixia/wechaty/)
-[![Docker Layers](https://images.microbadger.com/badges/image/zixia/wechaty.svg)](https://microbadger.com/#/images/zixia/wechaty)
+[![Docker Pulls](https://img.shields.io/docker/pulls/wechaty/wechaty.svg?maxAge=2592000)](https://hub.docker.com/r/wechaty/wechaty/)
+[![Docker Layers](https://images.microbadger.com/badges/image/wechaty/wechaty.svg)](https://microbadger.com/#/images/wechaty/wechaty)
 
 - Wechaty Starter Repository for Docker - <https://github.com/wechaty/docker-wechaty-getting-started>
 
@@ -124,14 +124,14 @@ node mybot.js
 
 ```shell
 # for JavaScript
-docker run -ti --rm --volume="$(pwd)":/bot zixia/wechaty mybot.js
+docker run -ti --rm --volume="$(pwd)":/bot wechaty/wechaty mybot.js
 ```
 
 2.2. Run TypeScript
 
 ```shell
 # for TypeScript
-docker run -ti --rm --volume="$(pwd)":/bot zixia/wechaty mybot.ts
+docker run -ti --rm --volume="$(pwd)":/bot wechaty/wechaty mybot.ts
 ```
 
 > Learn more about Wechaty Docker at [Wiki:Docker](https://github.com/Wechaty/wechaty/wiki/Docker).
@@ -364,7 +364,7 @@ See:
 [![Powered by Wechaty](https://img.shields.io/badge/Powered%20By-Wechaty-brightgreen.svg)](https://github.com/Wechaty/wechaty)
 ```
 
-Get more embed html/markdown code from [Wiki:PoweredByWechaty](https://github.com/Wechaty/wechaty/wiki/PoweredByWechaty)
+Get more embed html/markdown code from [Wiki:Badge](https://github.com/wechaty/wechaty/wiki/Badge)
 
 ### :star2: Projects Using Wechaty
 
@@ -379,7 +379,7 @@ Get more embed html/markdown code from [Wiki:PoweredByWechaty](https://github.co
 
 Pull Request is welcome to add yours!
 
-Learn more about Projects Using Wechaty at [Wiki:PoweredByWechaty](https://github.com/Wechaty/wechaty/wiki/PoweredByWechaty)
+Learn more about Projects Using Wechaty at [Wiki:Projects Using Wechaty](https://github.com/wechaty/wechaty/wiki/Projects-Using-Wechaty)
 
 ## :innocent: Find a Good Server
 
@@ -464,7 +464,7 @@ Support this project by becoming a sponsor. Your logo will show up here with a l
 - [Java Wechaty](https://github.com/wechaty/java-wechaty) - Java WeChaty Conversational AI Chatbot SDK for Wechat Individual Accounts (Java)
 - [Scala Wechaty](https://github.com/wechaty/scala-wechaty) - Scala WeChaty Conversational AI Chatbot SDK for WechatyIndividual Accounts (Scala)
 
-## :raised_hands: Authors
+## :raised_hands: Creators
 
 1. [Huan](https://github.com/huan) [(李卓桓)](http://linkedin.com/in/zixia), Tencent TVP of Chatbot
 1. [Rui (李佳芮)](https://pre-angel.com/peoples/jiarui-li/), Microsoft AI MVP

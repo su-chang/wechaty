@@ -23,18 +23,20 @@ import {
   ImageType,
 }                   from 'wechaty-puppet'
 
-import { Accessory } from '../accessory'
+import { Wechaty } from '../wechaty'
 import {
   FileBox,
   log,
 }                   from '../config'
 
-export class Image extends Accessory {
+class Image {
+
+  static get wechaty  (): Wechaty { throw new Error('This class can not be used directory. See: https://github.com/wechaty/wechaty/issues/2027') }
+  get wechaty        (): Wechaty { throw new Error('This class can not be used directory. See: https://github.com/wechaty/wechaty/issues/2027') }
 
   constructor (
     public id: string,
   ) {
-    super()
     log.verbose('Image', 'constructor(%s)',
       id,
       this.constructor.name,
@@ -43,11 +45,11 @@ export class Image extends Accessory {
     const MyClass = instanceToClass(this, Image)
 
     if (MyClass === Image) {
-      throw new Error('Image class can not be instanciated directly! See: https://github.com/wechaty/wechaty/issues/1217')
+      throw new Error('Image class can not be instantiated directly! See: https://github.com/wechaty/wechaty/issues/1217')
     }
 
-    if (!this.puppet) {
-      throw new Error('Image class can not be instanciated without a puppet!')
+    if (!this.wechaty.puppet) {
+      throw new Error('Image class can not be instantiated without a puppet!')
     }
   }
 
@@ -60,20 +62,38 @@ export class Image extends Accessory {
 
   public async thumbnail (): Promise<FileBox> {
     log.verbose('Image', 'thumbnail() for id: "%s"', this.id)
-    const fileBox = await this.puppet.messageImage(this.id, ImageType.Thumbnail)
+    const fileBox = await this.wechaty.puppet.messageImage(this.id, ImageType.Thumbnail)
     return fileBox
   }
 
   public async hd (): Promise<FileBox> {
     log.verbose('Image', 'hd() for id: "%s"', this.id)
-    const fileBox = await this.puppet.messageImage(this.id, ImageType.HD)
+    const fileBox = await this.wechaty.puppet.messageImage(this.id, ImageType.HD)
     return fileBox
   }
 
   public async artwork (): Promise<FileBox> {
     log.verbose('Image', 'artwork() for id: "%s"', this.id)
-    const fileBox = await this.puppet.messageImage(this.id, ImageType.Artwork)
+    const fileBox = await this.wechaty.puppet.messageImage(this.id, ImageType.Artwork)
     return fileBox
   }
 
+}
+
+function wechatifyImage (wechaty: Wechaty): typeof Image {
+
+  class WechatifiedImage extends Image {
+
+    static get wechaty  () { return wechaty }
+    get wechaty        () { return wechaty }
+
+  }
+
+  return WechatifiedImage
+
+}
+
+export {
+  Image,
+  wechatifyImage,
 }
