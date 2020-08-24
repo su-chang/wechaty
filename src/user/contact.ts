@@ -25,6 +25,7 @@ import {
   ContactQueryFilter,
   ContactType,
   FileBox,
+  PayloadType,
 }                         from 'wechaty-puppet'
 
 import { Wechaty } from '../wechaty'
@@ -522,7 +523,7 @@ class Contact extends ContactEventEmitter implements Sayable {
 
     try {
       await this.wechaty.puppet.contactAlias(this.id, newAlias)
-      await this.wechaty.puppet.contactPayloadDirty(this.id)
+      await this.wechaty.puppet.dirtyPayload(PayloadType.Contact, this.id)
       this.payload = await this.wechaty.puppet.contactPayload(this.id)
       if (newAlias && newAlias !== this.payload.alias) {
         log.warn('Contact', 'alias(%s) sync with server fail: set(%s) is not equal to get(%s)',
@@ -538,17 +539,114 @@ class Contact extends ContactEventEmitter implements Sayable {
   }
 
   /**
+   * GET / SET / DELETE the phone list for a contact
    *
-   * @description
-   * Should use {@link Contact#friend} instead
+   * @param {(none | string[])} phoneList
+   * @returns {(Promise<string[] | void>)}
+   * @example <caption> GET the phone list for a contact, return {(Promise<string[]>)}</caption>
+   * const phoneList = await contact.phone()
+   * if (phone.length === 0) {
+   *   console.log('You have not yet set any phone number for contact ' + contact.name())
+   * } else {
+   *   console.log('You have already set phone numbers for contact ' + contact.name() + ':' + phoneList.join(','))
+   * }
    *
-   * @deprecated
-   * @ignore
+   * @example <caption>SET the phoneList for a contact</caption>
+   * try {
+   *   const phoneList = ['13999999999', '13888888888']
+   *   await contact.alias(phoneList)
+   *   console.log(`change ${contact.name()}'s phone successfully!`)
+   * } catch (e) {
+   *   console.log(`failed to change ${contact.name()} phone!`)
+   * }
    */
-  public stranger (): null | boolean {
-    log.warn('Contact', 'stranger() DEPRECATED. use friend() instead.')
-    if (!this.payload) return null
-    return !this.friend()
+  public async phone (): Promise<string[]>
+  public async phone (phoneList: string[]): Promise<void>
+  public async phone (phoneList?: string[]): Promise<string[] | void> {
+    log.silly('Contact', 'phone(%s)', phoneList === undefined ? '' : JSON.stringify(phoneList))
+
+    if (!this.payload) {
+      throw new Error('no payload')
+    }
+
+    if (typeof phoneList === 'undefined') {
+      return this.payload.phone
+    }
+
+    try {
+      await this.wechaty.puppet.contactPhone(this.id, phoneList)
+      await this.wechaty.puppet.dirtyPayload(PayloadType.Contact, this.id)
+      this.payload = await this.wechaty.puppet.contactPayload(this.id)
+    } catch (e) {
+      log.error('Contact', 'phone(%s) rejected: %s', JSON.stringify(phoneList), e.message)
+      Raven.captureException(e)
+    }
+  }
+
+  public async corporation (): Promise<string | null>
+  public async corporation (remark: string | null): Promise<void>
+  public async corporation (remark?: string | null): Promise<string | null | void> {
+    log.silly('Contact', 'corporation(%s)', remark)
+
+    if (!this.payload) {
+      throw new Error('no payload')
+    }
+
+    if (typeof remark === 'undefined') {
+      return this.payload.corporation || null
+    }
+
+    if (this.payload.type !== ContactType.Individual) {
+      throw new Error('Can not set corporation remark on non individual contact.')
+    }
+
+    try {
+      await this.wechaty.puppet.contactCorporationRemark(this.id, remark)
+      await this.wechaty.puppet.dirtyPayload(PayloadType.Contact, this.id)
+      this.payload = await this.wechaty.puppet.contactPayload(this.id)
+    } catch (e) {
+      log.error('Contact', 'corporation(%s) rejected: %s', remark, e.message)
+      Raven.captureException(e)
+    }
+  }
+
+  public async description (): Promise<string | null>
+  public async description (newDescription: string | null): Promise<void>
+  public async description (newDescription?: string | null): Promise<string | null | void> {
+    log.silly('Contact', 'description(%s)', newDescription)
+
+    if (!this.payload) {
+      throw new Error('no payload')
+    }
+
+    if (typeof newDescription === 'undefined') {
+      return this.payload.description || null
+    }
+
+    try {
+      await this.wechaty.puppet.contactDescription(this.id, newDescription)
+      await this.wechaty.puppet.dirtyPayload(PayloadType.Contact, this.id)
+      this.payload = await this.wechaty.puppet.contactPayload(this.id)
+    } catch (e) {
+      log.error('Contact', 'description(%s) rejected: %s', newDescription, e.message)
+      Raven.captureException(e)
+    }
+  }
+
+  public title (): string | null {
+    if (!this.payload) {
+      throw new Error('no payload')
+    }
+
+    return this.payload.title || null
+  }
+
+  public coworker (): boolean {
+    if (!this.payload) {
+      throw new Error('no payload')
+    }
+
+    return !!this.payload.coworker
   }
 
   /**
@@ -570,33 +668,6 @@ class Contact extends ContactEventEmitter implements Sayable {
       return null
     }
     return this.payload.friend || null
-  }
-
-  /**
-    * @ignore
-   * @see {@link https://github.com/Chatie/webwx-app-tracker/blob/7c59d35c6ea0cff38426a4c5c912a086c4c512b2/formatted/webwxApp.js#L3243|webwxApp.js#L324}
-   * @see {@link https://github.com/Urinx/WeixinBot/blob/master/README.md|Urinx/WeixinBot/README}
-   */
-  /**
-   * @description
-   * Check if it's a official account, should use {@link Contact#type} instead
-   * @deprecated
-   * @ignore
-   */
-  public official (): boolean {
-    log.warn('Contact', 'official() DEPRECATED. use type() instead')
-    return !!this.payload && (this.payload.type === ContactType.Official)
-  }
-
-  /**
-   * @description
-   * Check if it's a personal account, should use {@link Contact#type} instead
-   * @deprecated
-   * @ignore
-   */
-  public personal (): boolean {
-    log.warn('Contact', 'personal() DEPRECATED. use type() instead')
-    return !!this.payload && this.payload.type === ContactType.Personal
   }
 
   /**
@@ -723,18 +794,6 @@ class Contact extends ContactEventEmitter implements Sayable {
   }
 
   /**
-   * @description
-   * Force reload(re-ready()) data for Contact, use {@link Contact#sync} instead
-   *
-   * @deprecated
-   * @ignore
-   */
-  public refresh (): Promise<void> {
-    log.warn('Contact', 'refresh() DEPRECATED. use sync() instead.')
-    return this.sync()
-  }
-
-  /**
    * Force reload data for Contact, Sync data from low-level API again.
    *
    * @returns {Promise<this>}
@@ -765,7 +824,7 @@ class Contact extends ContactEventEmitter implements Sayable {
 
     try {
       if (forceSync) {
-        await this.wechaty.puppet.contactPayloadDirty(this.id)
+        await this.wechaty.puppet.dirtyPayload(PayloadType.Contact, this.id)
       }
       this.payload = await this.wechaty.puppet.contactPayload(this.id)
       // log.silly('Contact', `ready() this.wechaty.puppet.contactPayload(%s) resolved`, this)

@@ -30,6 +30,7 @@ import {
   PUPPET_EVENT_DICT,
   PuppetEventName,
   PuppetOptions,
+  PayloadType,
 }                       from 'wechaty-puppet'
 
 import {
@@ -100,9 +101,6 @@ export interface WechatyOptions {
   memory?        : MemoryCard,
   name?          : string,                    // Wechaty Name
 
-  // @deprecated: use `name` instead of `profile`
-  profile?       : null | string,             // DEPRECATED: use name instead
-
   puppet?        : PuppetModuleName | Puppet, // Puppet name or instance
   puppetOptions? : PuppetOptions,             // Puppet TOKEN
   ioToken?       : string,                    // Io TOKEN
@@ -128,12 +126,12 @@ const PUPPET_MEMORY_NAME = 'puppet'
  * @example <caption>The World's Shortest ChatBot Code: 6 lines of JavaScript</caption>
  * const { Wechaty } = require('wechaty')
  * const bot = new Wechaty()
- * bot.on('scan',    (qrCode, status) => console.log('https://wechaty.github.io/qrcode/' + encodeURIComponent(qrcode)))
+ * bot.on('scan',    (qrCode, status) => console.log('https://wechaty.js.org/qrcode/' + encodeURIComponent(qrcode)))
  * bot.on('login',   user => console.log(`User ${user} logged in`))
  * bot.on('message', message => console.log(`Message: ${message}`))
  * bot.start()
  */
-export class Wechaty extends WechatyEventEmitter implements Sayable {
+class Wechaty extends WechatyEventEmitter implements Sayable {
 
   public static readonly VERSION = VERSION
 
@@ -175,16 +173,16 @@ export class Wechaty extends WechatyEventEmitter implements Sayable {
   protected wechatifiedTag?            : typeof Tag
   protected wechatifiedUrlLink?        : typeof UrlLink
 
-  public get Contact ()        : typeof Contact         { return this.wechatifiedContact!         }
-  public get ContactSelf ()    : typeof ContactSelf     { return this.wechatifiedContactSelf!     }
-  public get Friendship ()     : typeof Friendship      { return this.wechatifiedFriendship!      }
-  public get Image ()          : typeof Image           { return this.wechatifiedImage!           }
-  public get Message ()        : typeof Message         { return this.wechatifiedMessage!         }
-  public get MiniProgram ()    : typeof MiniProgram     { return this.wechatifiedMiniProgram!     }
-  public get Room ()           : typeof Room            { return this.wechatifiedRoom!            }
-  public get RoomInvitation () : typeof RoomInvitation  { return this.wechatifiedRoomInvitation!  }
-  public get Tag ()            : typeof Tag             { return this.wechatifiedTag!             }
-  public get UrlLink ()        : typeof UrlLink         { return this.wechatifiedUrlLink!         }
+  public get Contact ()        : typeof Contact         { return guardWechatify(this.wechatifiedContact)        }
+  public get ContactSelf ()    : typeof ContactSelf     { return guardWechatify(this.wechatifiedContactSelf)    }
+  public get Friendship ()     : typeof Friendship      { return guardWechatify(this.wechatifiedFriendship)     }
+  public get Image ()          : typeof Image           { return guardWechatify(this.wechatifiedImage)          }
+  public get Message ()        : typeof Message         { return guardWechatify(this.wechatifiedMessage)        }
+  public get MiniProgram ()    : typeof MiniProgram     { return guardWechatify(this.wechatifiedMiniProgram)    }
+  public get Room ()           : typeof Room            { return guardWechatify(this.wechatifiedRoom)           }
+  public get RoomInvitation () : typeof RoomInvitation  { return guardWechatify(this.wechatifiedRoomInvitation) }
+  public get Tag ()            : typeof Tag             { return guardWechatify(this.wechatifiedTag)            }
+  public get UrlLink ()        : typeof UrlLink         { return guardWechatify(this.wechatifiedUrlLink)        }
 
   /**
    * Get the global instance of Wechaty
@@ -286,10 +284,6 @@ export class Wechaty extends WechatyEventEmitter implements Sayable {
     super()
     log.verbose('Wechaty', 'constructor()')
 
-    if (!options.name && options.profile) {
-      log.verbose('Wechaty', 'constructor() WechatyOptions.profile DEPRECATED. use WechatyOptions.name instead.')
-      options.name = options.profile
-    }
     this.memory = this.options.memory
 
     this.id = cuid()
@@ -412,7 +406,15 @@ export class Wechaty extends WechatyEventEmitter implements Sayable {
     puppetInstance.setMemory(puppetMemory)
 
     this.initPuppetEventBridge(puppetInstance)
-    this.initPuppetAccessory(puppetInstance)
+    this.wechatifyUserModules(puppetInstance)
+
+    /**
+      * Private Event
+      *  emit puppet when set
+      *
+      * Huan(202005)
+      */
+    ;(this.emit as any)('puppet', puppetInstance)
   }
 
   protected initPuppetEventBridge (puppet: Puppet) {
@@ -544,8 +546,8 @@ export class Wechaty extends WechatyEventEmitter implements Sayable {
             // issue #254
             const selfId = this.puppet.selfId()
             if (selfId && payload.removeeIdList.includes(selfId)) {
-              await this.puppet.roomPayloadDirty(payload.roomId)
-              await this.puppet.roomMemberPayloadDirty(payload.roomId)
+              await this.puppet.dirtyPayload(PayloadType.Room, payload.roomId)
+              await this.puppet.dirtyPayload(PayloadType.RoomMember, payload.roomId)
             }
 
           })
@@ -575,6 +577,38 @@ export class Wechaty extends WechatyEventEmitter implements Sayable {
           // Do not propagation `reset` event from puppet
           break
 
+        case 'dirty':
+          /**
+           * https://github.com/wechaty/wechaty-puppet-hostie/issues/43
+           */
+          puppet.on('dirty', async ({ payloadType, payloadId }) => {
+            switch (payloadType) {
+              case PayloadType.RoomMember:
+              case PayloadType.Contact:
+                await this.Contact.load(payloadId).sync()
+                break
+              case PayloadType.Room:
+                await this.Room.load(payloadId).sync()
+                break
+
+              /**
+               * Huan(202008): noop for the following
+               */
+              case PayloadType.Friendship:
+                // Friendship has no payload
+                // await this.Friendship.load(payloadId)
+                break
+              case PayloadType.Message:
+                // Message does not need to dirty (?)
+                break
+
+              case PayloadType.Unknown:
+              default:
+                throw new Error('unknown payload type: ' + payloadType)
+            }
+          })
+          break
+
         default:
           /**
            * Check: The eventName here should have the type `never`
@@ -585,8 +619,8 @@ export class Wechaty extends WechatyEventEmitter implements Sayable {
     }
   }
 
-  protected initPuppetAccessory (puppet: Puppet) {
-    log.verbose('Wechaty', 'initAccessory(%s)', puppet)
+  protected wechatifyUserModules (puppet: Puppet) {
+    log.verbose('Wechaty', 'wechatifyUserModules(%s)', puppet)
 
     if (this.wechatifiedContactSelf) {
       throw new Error('can not be initialized twice!')
@@ -607,14 +641,6 @@ export class Wechaty extends WechatyEventEmitter implements Sayable {
     this.wechatifiedUrlLink        = wechatifyUrlLink(this)
 
     this.puppet = puppet
-
-    /**
-     * Private Event
-     *  emit puppet when set
-     *
-     * Huan(202005)
-     */
-    ;(this.emit as any)('puppet', puppet)
   }
 
   /**
@@ -806,17 +832,6 @@ export class Wechaty extends WechatyEventEmitter implements Sayable {
   }
 
   /**
-   * @description
-   * Should use {@link Wechaty#userSelf} instead
-   * @deprecated Use `userSelf()` instead
-   * @ignore
-   */
-  public self (): Contact {
-    log.warn('Wechaty', 'self() DEPRECATED. use userSelf() instead.')
-    return this.userSelf()
-  }
-
-  /**
    * Get current user
    *
    * @returns {ContactSelf}
@@ -995,4 +1010,18 @@ export class Wechaty extends WechatyEventEmitter implements Sayable {
     this.puppet.unref()
   }
 
+}
+
+/**
+ * Huan(202008): we will bind the wechaty puppet with user modules (Contact, Room, etc) together inside the start() method
+ */
+function guardWechatify<T extends Function> (userModule?: T): T {
+  if (!userModule) {
+    throw new Error('Wechaty user module (for example, wechaty.Room) can not be used before wechaty.start()!')
+  }
+  return userModule
+}
+
+export {
+  Wechaty,
 }
