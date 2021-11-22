@@ -30,6 +30,7 @@ import {
   UrlLinkConstructor,
 
   wechatifyUserModule,
+  MomentConstructor,
 }                       from '../user-modules/mod.js'
 
 import type {
@@ -59,6 +60,7 @@ const wechatifyUserModuleMixin = <MixinBase extends typeof WechatySkelton> (mixi
     _wechatifiedRoomInvitation? : RoomInvitationConstructor
     _wechatifiedTag?            : TagConstructor
     _wechatifiedUrlLink?        : UrlLinkConstructor
+    _wechatifiedMoment?         : MomentConstructor
 
     get Contact ()        : ContactConstructor        { return guardWechatify(this._wechatifiedContact)        }
     get ContactSelf ()    : ContactSelfConstructor    { return guardWechatify(this._wechatifiedContactSelf)    }
@@ -73,6 +75,7 @@ const wechatifyUserModuleMixin = <MixinBase extends typeof WechatySkelton> (mixi
     get RoomInvitation () : RoomInvitationConstructor { return guardWechatify(this._wechatifiedRoomInvitation) }
     get Tag ()            : TagConstructor            { return guardWechatify(this._wechatifiedTag)            }
     get UrlLink ()        : UrlLinkConstructor        { return guardWechatify(this._wechatifiedUrlLink)        }
+    get Moment ()         : MomentConstructor         { return guardWechatify(this._wechatifiedMoment)    }
 
     override async start (): Promise<void> {
       log.verbose('WechatifyUserModuleMixin', 'start()')
